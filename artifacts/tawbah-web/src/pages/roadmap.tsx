@@ -1,292 +1,321 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2, Circle, ChevronDown, ChevronUp,
-  ShieldAlert, Zap, BookOpen, Star, Lightbulb,
-  LayoutDashboard, Lock, BarChart2, Users, Bell,
-  Mic2, Smartphone, FileText, CheckCheck,
+  CheckCircle2,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  ShieldAlert,
+  BookOpen,
+  LayoutDashboard,
+  Star,
+  Lightbulb,
+  CheckCheck,
+  ArrowRight,
 } from "lucide-react";
 
-// ─── بيانات خطة التطوير ────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Step {
   id: string;
   title: string;
   description: string;
-  priority?: "حرج" | "عالي" | "متوسط" | "جديد";
+  priority: "حرج" | "عالي" | "متوسط" | "جديد";
 }
 
 interface Phase {
   id: string;
-  phase: string;
+  phaseLabel: string;
   title: string;
   subtitle: string;
   icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  borderColor: string;
+  accentClass: string;   // text color
+  trackColor: string;    // for progress bar (inline style)
   steps: Step[];
 }
+
+// ─── Data ────────────────────────────────────────────────────────────────────
 
 const PHASES: Phase[] = [
   {
     id: "phase-1",
-    phase: "المرحلة الأولى",
+    phaseLabel: "المرحلة الأولى",
     title: "إصلاحات حرجة",
     subtitle: "أولوية قصوى — تؤثر على أمان البيانات",
-    icon: <ShieldAlert size={18} />,
-    color: "text-red-500 dark:text-red-400",
-    bgColor: "bg-red-500/8",
-    borderColor: "border-red-400/25",
+    icon: <ShieldAlert size={17} />,
+    accentClass: "text-red-500",
+    trackColor: "#ef4444",
     steps: [
       {
         id: "1-1",
         title: "نظام Authentication حقيقي",
-        description: "استبدال sessionId + localStorage بنظام Supabase Auth كامل — تسجيل دخول بالبريد + Google OAuth + ربط البيانات بـ user_id حقيقي في قاعدة البيانات لحماية بيانات المستخدم من الضياع.",
+        description:
+          "استبدال sessionId + localStorage بنظام Supabase Auth كامل — تسجيل دخول بالبريد + Google OAuth + ربط البيانات بـ user_id حقيقي في قاعدة البيانات لحماية بيانات المستخدم من الضياع.",
         priority: "حرج",
       },
       {
         id: "1-2",
         title: "Rate Limiting على الـ API",
-        description: "إضافة express-rate-limit على جميع endpoints الخاصة بالذكاء الاصطناعي (zakiy, hadi-tasks, tts) بحد أقصى 20 طلب/دقيقة لكل جلسة — لحماية OpenAI credits من الاستنزاف.",
+        description:
+          "إضافة express-rate-limit على جميع endpoints الخاصة بالذكاء الاصطناعي (zakiy, hadi-tasks, tts) بحد أقصى 20 طلب/دقيقة لكل جلسة — لحماية OpenAI credits من الاستنزاف.",
         priority: "حرج",
       },
       {
         id: "1-3",
         title: "React Error Boundaries شاملة",
-        description: "إضافة Error Boundaries على جميع صفحات التطبيق مع صفحة fallback جميلة بدلاً من الشاشة البيضاء عند حدوث أي خطأ غير متوقع.",
+        description:
+          "إضافة Error Boundaries على جميع صفحات التطبيق مع صفحة fallback جميلة بدلاً من الشاشة البيضاء عند حدوث أي خطأ غير متوقع.",
         priority: "عالي",
       },
     ],
   },
   {
     id: "phase-2",
-    phase: "المرحلة الثانية",
-    title: "استكمال مكتبة القرآن — Phase 3",
+    phaseLabel: "المرحلة الثانية",
+    title: "استكمال مكتبة القرآن",
     subtitle: "البنية التحتية جاهزة — Routing موجود مسبقاً",
-    icon: <BookOpen size={18} />,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-500/8",
-    borderColor: "border-emerald-400/25",
+    icon: <BookOpen size={17} />,
+    accentClass: "text-emerald-600 dark:text-emerald-400",
+    trackColor: "#10b981",
     steps: [
       {
         id: "2-1",
         title: "ختمة مجتمعية /quran/khatma",
-        description: "إنشاء والانضمام لختمة جماعية مع الأصدقاء — توزيع الأجزاء الـ30 تلقائياً، تتبع التقدم في الوقت الفعلي، وإشعارات إتمام كل جزء.",
+        description:
+          "إنشاء والانضمام لختمة جماعية مع الأصدقاء — توزيع الأجزاء الـ30 تلقائياً، تتبع التقدم في الوقت الفعلي، وإشعارات إتمام كل جزء.",
         priority: "عالي",
       },
       {
         id: "2-2",
         title: "تحديات القرآن /quran/challenges",
-        description: "تحدي ختمة رمضان، تحدي حفظ جزء عمّ، لوحة متصدرين تفاعلية. كل تحدٍّ مع شريط تقدم وإشعارات تذكير يومية.",
+        description:
+          "تحدي ختمة رمضان، تحدي حفظ جزء عمّ، لوحة متصدرين تفاعلية. كل تحدٍّ مع شريط تقدم وإشعارات تذكير يومية.",
         priority: "عالي",
       },
       {
         id: "2-3",
         title: "AI قرآني /quran/ai",
-        description: "محادثة ذكية مع القرآن — اسأل عن آية أو موضوع، اقتراح آيات حسب الحالة النفسية، تفسير فوري بلغة سهلة مبني على GPT-4o.",
+        description:
+          "محادثة ذكية مع القرآن — اسأل عن آية أو موضوع، اقتراح آيات حسب الحالة النفسية، تفسير فوري بلغة سهلة مبني على GPT-4o.",
         priority: "عالي",
       },
       {
         id: "2-4",
         title: "بطاقات القرآن /quran/cards",
-        description: "بطاقة مرئية لأي آية قابلة للمشاركة على وسائل التواصل — اختيار الخط والخلفية والتصميم ثم التحميل أو المشاركة مباشرة.",
+        description:
+          "بطاقة مرئية لأي آية قابلة للمشاركة على وسائل التواصل — اختيار الخط والخلفية والتصميم ثم التحميل أو المشاركة مباشرة.",
         priority: "متوسط",
       },
       {
         id: "2-5",
         title: "معجزات القرآن /quran/miracles",
-        description: "استكشاف تفاعلي للإعجاز العلمي والعددي في القرآن الكريم — بطاقات موضوعية مع مصادر ومراجع.",
+        description:
+          "استكشاف تفاعلي للإعجاز العلمي والعددي في القرآن الكريم — بطاقات موضوعية مع مصادر ومراجع.",
         priority: "متوسط",
       },
     ],
   },
   {
     id: "phase-3",
-    phase: "المرحلة الثالثة",
+    phaseLabel: "المرحلة الثالثة",
     title: "تحسينات UX وPerformance",
     subtitle: "تجربة مستخدم أكثر سلاسة واحترافية",
-    icon: <LayoutDashboard size={18} />,
-    color: "text-secondary dark:text-accent",
-    bgColor: "bg-secondary/8",
-    borderColor: "border-secondary/25",
+    icon: <LayoutDashboard size={17} />,
+    accentClass: "text-secondary",
+    trackColor: "hsl(43 60% 50%)",
     steps: [
       {
         id: "3-1",
         title: "Onboarding Flow للمستخدم الجديد",
-        description: "شاشة ترحيبية تفاعلية للمستخدم الجديد — توجيه ذكي لأول خطوة (Covenant → Day One → Journey) مع تخطي للمستخدم العائد.",
+        description:
+          "شاشة ترحيبية تفاعلية للمستخدم الجديد — توجيه ذكي لأول خطوة (Covenant → Day One → Journey) مع تخطي للمستخدم العائد.",
         priority: "عالي",
       },
       {
         id: "3-2",
         title: "Offline Support محسّن",
-        description: "تحسين Service Worker الموجود — cache للأذكار والأدعية اليومية لعمل offline كامل، مع sync تلقائي عند عودة الاتصال.",
+        description:
+          "تحسين Service Worker الموجود — cache للأذكار والأدعية اليومية لعمل offline كامل، مع sync تلقائي عند عودة الاتصال.",
         priority: "متوسط",
       },
       {
         id: "3-3",
         title: "Dashboard Analytics للمسؤول",
-        description: "تحسين صفحة /admin بإحصائيات حقيقية — عدد المستخدمين النشطين، متوسط الـ streak، توزيع المراحل، ورسوم بيانية تفاعلية.",
+        description:
+          "تحسين صفحة /admin بإحصائيات حقيقية — عدد المستخدمين النشطين، متوسط الـ streak، توزيع المراحل، ورسوم بيانية تفاعلية.",
         priority: "متوسط",
       },
     ],
   },
   {
     id: "phase-4",
-    phase: "المرحلة الرابعة",
+    phaseLabel: "المرحلة الرابعة",
     title: "مزايا جديدة مقترحة",
     subtitle: "توسعات تزيد من قيمة التطبيق وانتشاره",
-    icon: <Star size={18} />,
-    color: "text-amber-500 dark:text-amber-400",
-    bgColor: "bg-amber-500/8",
-    borderColor: "border-amber-400/25",
+    icon: <Star size={17} />,
+    accentClass: "text-amber-500",
+    trackColor: "#f59e0b",
     steps: [
       {
         id: "4-1",
         title: "ميزة صديق المساءلة",
-        description: "ربط مستخدمين معاً بالموافقة المتبادلة — إشعار لصديقك عند إتمامك يوماً كاملاً، تشجيع متبادل مجهول الهوية، وتقارير مشتركة أسبوعية.",
+        description:
+          "ربط مستخدمين معاً بالموافقة المتبادلة — إشعار لصديقك عند إتمامك يوماً كاملاً، تشجيع متبادل مجهول الهوية، وتقارير مشتركة أسبوعية.",
         priority: "جديد",
       },
       {
         id: "4-2",
         title: "مشغل التلاوة العائم",
-        description: "تشغيل أذكار أو تلاوة قرآنية في الخلفية أثناء استخدام التطبيق — مشغل عائم صغير في أسفل الشاشة مع تحكم سهل.",
+        description:
+          "تشغيل أذكار أو تلاوة قرآنية في الخلفية أثناء استخدام التطبيق — مشغل عائم صغير في أسفل الشاشة مع تحكم سهل.",
         priority: "جديد",
       },
       {
         id: "4-3",
         title: "Widget للهاتف (Android)",
-        description: "Widget على الشاشة الرئيسية يعرض الذكر اليومي والـ streak الحالي — اضغط مباشرة لفتح التطبيق ومتابعة يومك.",
+        description:
+          "Widget على الشاشة الرئيسية يعرض الذكر اليومي والـ streak الحالي — اضغط مباشرة لفتح التطبيق ومتابعة يومك.",
         priority: "جديد",
       },
       {
         id: "4-4",
         title: "تقرير أسبوعي شخصي",
-        description: "ملخص أسبوعي يُرسل كإشعار — «هذا الأسبوع: 7 أيام استغفار، 5 صفحات قرآن، 3 وتر...» مع رسم بياني للتقدم الأسبوعي.",
+        description:
+          "ملخص أسبوعي يُرسل كإشعار — «هذا الأسبوع: 7 أيام استغفار، 5 صفحات قرآن، 3 وتر...» مع رسم بياني للتقدم الأسبوعي.",
         priority: "جديد",
       },
     ],
   },
 ];
 
-// ─── مساعدات ────────────────────────────────────────────────────────────────
+// ─── Priority config ──────────────────────────────────────────────────────────
 
-const PRIORITY_CONFIG = {
-  "حرج": { bg: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20", dot: "bg-red-500" },
-  "عالي": { bg: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20", dot: "bg-orange-500" },
-  "متوسط": { bg: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20", dot: "bg-blue-500" },
-  "جديد": { bg: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20", dot: "bg-purple-500" },
+const PRIORITY_CONFIG: Record<Step["priority"], { label: string; className: string; dot: string }> = {
+  "حرج":   { label: "حرج",   className: "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20",     dot: "bg-red-500" },
+  "عالي":  { label: "عالي",  className: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20", dot: "bg-orange-500" },
+  "متوسط": { label: "متوسط", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",   dot: "bg-blue-500" },
+  "جديد":  { label: "جديد",  className: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20", dot: "bg-purple-500" },
 };
 
-const STORAGE_KEY = "tawbah_roadmap_progress";
+// ─── Storage ─────────────────────────────────────────────────────────────────
 
-function loadProgress(): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+const STORAGE_KEY = "tawbah_roadmap_v1";
+
+function load(): Record<string, boolean> {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"); }
+  catch { return {}; }
 }
 
-function saveProgress(data: Record<string, boolean>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
+function save(data: Record<string, boolean>) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch { /* noop */ }
 }
 
-// ─── مكون الخطوة ────────────────────────────────────────────────────────────
+// ─── StepItem ────────────────────────────────────────────────────────────────
 
 function StepItem({
-  step, done, onToggle, idx,
+  step,
+  done,
+  onToggle,
+  index,
 }: {
-  step: Step; done: boolean; onToggle: () => void; idx: number;
+  step: Step;
+  done: boolean;
+  onToggle: () => void;
+  index: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const pCfg = step.priority ? PRIORITY_CONFIG[step.priority] : null;
+  const [open, setOpen] = useState(false);
+  const p = PRIORITY_CONFIG[step.priority];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.05 }}
-      className={`rounded-xl border transition-all duration-300 overflow-hidden ${
+      initial={{ opacity: 0, x: 8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.25 }}
+      className={[
+        "rounded-xl border overflow-hidden transition-all duration-300",
         done
-          ? "bg-primary/5 border-primary/15 opacity-75"
-          : "bg-card border-border"
-      }`}
+          ? "bg-primary/5 border-primary/15"
+          : "bg-card border-border",
+      ].join(" ")}
     >
-      {/* ── صف رئيسي ── */}
-      <div className="flex items-start gap-3 p-3.5">
-        {/* Checkbox */}
+      {/* Main row */}
+      <div className="flex items-start gap-3 px-3.5 pt-3.5 pb-2">
+        {/* Checkbox button */}
         <button
           onClick={onToggle}
-          className="mt-0.5 shrink-0 active:scale-90 transition-transform"
-          aria-label={done ? "إلغاء التحديد" : "تحديد كمكتمل"}
+          className="mt-[2px] shrink-0 active:scale-90 transition-transform focus:outline-none"
+          aria-label={done ? "إلغاء التعليم" : "تعليم كمكتمل"}
         >
           <AnimatePresence mode="wait">
             {done ? (
               <motion.div
-                key="done"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.5, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                key="checked"
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 18 }}
               >
                 <CheckCircle2 size={22} className="text-primary" />
               </motion.div>
             ) : (
               <motion.div
-                key="undone"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.5, opacity: 0 }}
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
               >
-                <Circle size={22} className="text-muted-foreground/40" />
+                <Circle size={22} className="text-muted-foreground/35" />
               </motion.div>
             )}
           </AnimatePresence>
         </button>
 
-        {/* محتوى */}
+        {/* Text */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={`font-bold text-sm leading-snug transition-all ${
-              done ? "line-through text-muted-foreground" : "text-foreground"
-            }`}>
+            <p
+              className={[
+                "text-sm font-bold leading-snug transition-colors",
+                done ? "line-through text-muted-foreground/60" : "text-foreground",
+              ].join(" ")}
+            >
               {step.title}
             </p>
-            {pCfg && step.priority && (
-              <span className={`shrink-0 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${pCfg.bg}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${pCfg.dot}`} />
-                {step.priority}
-              </span>
-            )}
+            <span
+              className={[
+                "shrink-0 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full",
+                p.className,
+              ].join(" ")}
+            >
+              <span className={["w-1.5 h-1.5 rounded-full", p.dot].join(" ")} />
+              {p.label}
+            </span>
           </div>
 
-          {/* زر التوسيع */}
+          {/* Toggle details */}
           <button
-            onClick={() => setExpanded(e => !e)}
-            className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+            onClick={() => setOpen((v) => !v)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors focus:outline-none"
           >
-            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            {expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+            {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {open ? "إخفاء التفاصيل" : "عرض التفاصيل"}
           </button>
         </div>
       </div>
 
-      {/* ── تفاصيل قابلة للطي ── */}
+      {/* Collapsible details */}
       <AnimatePresence>
-        {expanded && (
+        {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22 }}
             className="overflow-hidden"
           >
-            <div className="px-3.5 pb-3.5 pt-0">
-              <div className="bg-muted/50 border border-border/50 rounded-lg px-3 py-2.5">
+            <div className="px-3.5 pb-3.5">
+              <div className="rounded-lg bg-muted/50 border border-border/60 px-3 py-2.5">
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   {step.description}
                 </p>
@@ -299,83 +328,91 @@ function StepItem({
   );
 }
 
-// ─── مكون المرحلة ────────────────────────────────────────────────────────────
+// ─── PhaseCard ───────────────────────────────────────────────────────────────
 
 function PhaseCard({
-  phase, progress, onToggleStep,
+  phase,
+  progress,
+  onToggle,
+  index,
 }: {
   phase: Phase;
   progress: Record<string, boolean>;
-  onToggleStep: (id: string) => void;
+  onToggle: (id: string) => void;
+  index: number;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const doneCount = phase.steps.filter(s => progress[s.id]).length;
-  const totalCount = phase.steps.length;
-  const pct = Math.round((doneCount / totalCount) * 100);
-  const allDone = doneCount === totalCount;
+  const doneCount = phase.steps.filter((s) => progress[s.id]).length;
+  const total = phase.steps.length;
+  const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+  const allDone = doneCount === total;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border overflow-hidden ${phase.bgColor} ${phase.borderColor}`}
+      transition={{ delay: index * 0.08 }}
+      className="rounded-2xl border border-border bg-card overflow-hidden"
     >
-      {/* ── رأس المرحلة ── */}
+      {/* Phase header */}
       <button
-        onClick={() => setCollapsed(c => !c)}
-        className="w-full flex items-start gap-3 p-4 text-right"
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full flex items-start gap-3 px-4 pt-4 pb-3 text-right focus:outline-none"
       >
-        <div className={`mt-0.5 shrink-0 ${phase.color}`}>{phase.icon}</div>
+        {/* Icon */}
+        <div className={["mt-0.5 shrink-0", phase.accentClass].join(" ")}>
+          {phase.icon}
+        </div>
+
+        {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-start justify-between gap-2">
             <div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${phase.color} opacity-70`}>
-                {phase.phase}
+              <p className={["text-[9px] font-bold uppercase tracking-widest opacity-60 mb-0.5", phase.accentClass].join(" ")}>
+                {phase.phaseLabel}
               </p>
-              <h3 className={`font-bold text-base leading-tight ${phase.color}`}>
+              <h3 className={["font-bold text-[15px] leading-tight", phase.accentClass].join(" ")}>
                 {phase.title}
               </h3>
             </div>
+
             <div className="flex items-center gap-2 shrink-0">
               {allDone && (
-                <motion.div
+                <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full"
+                  className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full"
                 >
-                  <CheckCheck size={11} />
+                  <CheckCheck size={10} />
                   مكتمل
-                </motion.div>
+                </motion.span>
               )}
-              <span className={`text-sm font-bold ${phase.color}`}>
-                {doneCount}/{totalCount}
+              <span className={["text-sm font-bold", phase.accentClass].join(" ")}>
+                {doneCount}/{total}
               </span>
-              {collapsed ? (
-                <ChevronDown size={16} className={phase.color} />
-              ) : (
-                <ChevronUp size={16} className={phase.color} />
-              )}
+              {collapsed
+                ? <ChevronDown size={15} className={phase.accentClass} />
+                : <ChevronUp size={15} className={phase.accentClass} />}
             </div>
           </div>
 
-          {/* شريط التقدم */}
-          <div className="mt-2.5">
-            <div className="h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+          {/* Progress bar */}
+          <div className="mt-2.5 space-y-1">
+            <div className="h-1.5 rounded-full bg-border overflow-hidden">
               <motion.div
-                className={`h-full rounded-full ${allDone ? "bg-emerald-500" : phase.color.includes("red") ? "bg-red-500" : phase.color.includes("emerald") ? "bg-emerald-500" : phase.color.includes("amber") ? "bg-amber-500" : "bg-secondary"}`}
+                className="h-full rounded-full"
+                style={{ backgroundColor: phase.trackColor }}
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1 text-right">
-              {phase.subtitle}
-            </p>
+            <p className="text-[9px] text-muted-foreground">{phase.subtitle}</p>
           </div>
         </div>
       </button>
 
-      {/* ── قائمة الخطوات ── */}
+      {/* Steps list */}
       <AnimatePresence>
         {!collapsed && (
           <motion.div
@@ -385,14 +422,14 @@ function PhaseCard({
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 flex flex-col gap-2">
-              {phase.steps.map((step, idx) => (
+            <div className="px-3 pb-3 flex flex-col gap-2 border-t border-border/50 pt-2">
+              {phase.steps.map((step, i) => (
                 <StepItem
                   key={step.id}
                   step={step}
                   done={!!progress[step.id]}
-                  onToggle={() => onToggleStep(step.id)}
-                  idx={idx}
+                  onToggle={() => onToggle(step.id)}
+                  index={i}
                 />
               ))}
             </div>
@@ -403,182 +440,201 @@ function PhaseCard({
   );
 }
 
-// ─── الصفحة الرئيسية ─────────────────────────────────────────────────────────
+// ─── Summary mini-cards ───────────────────────────────────────────────────────
+
+function PhaseSummaryCard({
+  phase,
+  progress,
+  index,
+}: {
+  phase: Phase;
+  progress: Record<string, boolean>;
+  index: number;
+}) {
+  const done = phase.steps.filter((s) => progress[s.id]).length;
+  const total = phase.steps.length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.88 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.06 }}
+      className="flex-1 rounded-xl border border-border bg-card flex flex-col items-center py-2.5 px-1 gap-1"
+    >
+      <div className={["text-sm", phase.accentClass].join(" ")}>{phase.icon}</div>
+      <p className={["text-sm font-bold leading-none", phase.accentClass].join(" ")}>{pct}%</p>
+      <p className="text-[8px] text-muted-foreground leading-none">م{index + 1}</p>
+    </motion.div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function RoadmapPage() {
-  const [progress, setProgress] = useState<Record<string, boolean>>(loadProgress);
+  const [progress, setProgress] = useState<Record<string, boolean>>(load);
 
-  const allSteps = PHASES.flatMap(p => p.steps);
-  const totalDone = allSteps.filter(s => progress[s.id]).length;
+  const allSteps = PHASES.flatMap((p) => p.steps);
+  const totalDone = allSteps.filter((s) => progress[s.id]).length;
   const totalSteps = allSteps.length;
-  const overallPct = Math.round((totalDone / totalSteps) * 100);
+  const overallPct = totalSteps === 0 ? 0 : Math.round((totalDone / totalSteps) * 100);
+  const allComplete = totalDone === totalSteps && totalSteps > 0;
 
-  const handleToggle = (id: string) => {
-    setProgress(prev => {
+  // Circumference for SVG circle (r=26)
+  const CIRC = 2 * Math.PI * 26;
+
+  function handleToggle(id: string) {
+    setProgress((prev) => {
       const next = { ...prev, [id]: !prev[id] };
-      saveProgress(next);
+      save(next);
       return next;
     });
-  };
+  }
 
-  const handleReset = () => {
-    if (!window.confirm("هل أنت متأكد من إعادة ضبط جميع التحديثات؟")) return;
+  function handleReset() {
+    if (!window.confirm("هل أنت متأكد من إعادة ضبط جميع الخطوات المكتملة؟")) return;
     setProgress({});
-    saveProgress({});
-  };
+    save({});
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-background min-h-full">
-      {/* ── رأس الصفحة ── */}
-      <div className="bg-primary px-5 pt-10 pb-8 rounded-b-[2.5rem] text-primary-foreground shadow-lg relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-primary-foreground/70 text-xs mb-1 font-medium">تقييم شامل ومهني</p>
-              <h1 className="text-xl font-bold text-white leading-tight text-balance">
-                خطة تطوير التطبيق
-              </h1>
-              <p className="text-primary-foreground/60 text-xs mt-1">
-                {totalSteps} خطوة تطويرية — {PHASES.length} مراحل
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              {/* دائرة النسبة المئوية */}
-              <div className="relative w-16 h-16">
-                <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                  <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
-                  <motion.circle
-                    cx="32" cy="32" r="26"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.85)"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 26}`}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 26 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 26 * (1 - overallPct / 100) }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base font-bold text-white leading-none">{overallPct}%</span>
-                  <span className="text-[8px] text-white/60 leading-none mt-0.5">منجز</span>
-                </div>
+
+      {/* ── Header ── */}
+      <div className="relative bg-primary px-5 pt-10 pb-8 rounded-b-[2.5rem] shadow-lg overflow-hidden">
+        {/* Decorative glows */}
+        <div className="absolute top-0 right-0 w-52 h-52 rounded-full bg-white/5 blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-white/5 blur-2xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+
+        <div className="relative z-10 flex items-start justify-between gap-4">
+          {/* Titles */}
+          <div className="flex-1 min-w-0">
+            <p className="text-primary-foreground/60 text-[11px] font-medium mb-1">
+              تقييم شامل ومهني
+            </p>
+            <h1 className="text-xl font-bold text-primary-foreground leading-tight text-balance">
+              خطة تطوير التطبيق
+            </h1>
+            <p className="text-primary-foreground/50 text-xs mt-1">
+              {totalSteps} خطوة — {PHASES.length} مراحل
+            </p>
+
+            {/* Overall progress bar */}
+            <div className="mt-4 space-y-1.5">
+              <div className="flex justify-between text-[10px] text-primary-foreground/60">
+                <span>التقدم الإجمالي</span>
+                <span className="font-bold text-primary-foreground/80">
+                  {totalDone} / {totalSteps}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-white/15 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-white/75"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${overallPct}%` }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                />
               </div>
             </div>
           </div>
 
-          {/* شريط التقدم الإجمالي */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-primary-foreground/70">التقدم الإجمالي</span>
-              <span className="text-xs font-bold text-primary-foreground">
-                {totalDone} / {totalSteps} خطوة
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-white/15 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-white/80"
-                initial={{ width: 0 }}
-                animate={{ width: `${overallPct}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              />
+          {/* Circular percentage */}
+          <div className="shrink-0 flex flex-col items-center gap-1">
+            <div className="relative w-[68px] h-[68px]">
+              <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
+                <circle
+                  cx="32" cy="32" r="26"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth="5"
+                />
+                <motion.circle
+                  cx="32" cy="32" r="26"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.8)"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={CIRC}
+                  initial={{ strokeDashoffset: CIRC }}
+                  animate={{ strokeDashoffset: CIRC * (1 - overallPct / 100) }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+                <span className="text-[17px] font-bold text-white leading-none">
+                  {overallPct}%
+                </span>
+                <span className="text-[8px] text-white/55 leading-none">منجز</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── ملخص المراحل ── */}
-      <div className="px-4 mt-5 mb-1">
-        <div className="grid grid-cols-4 gap-2">
-          {PHASES.map((phase, i) => {
-            const done = phase.steps.filter(s => progress[s.id]).length;
-            const total = phase.steps.length;
-            const pct = Math.round((done / total) * 100);
-            const phaseIcons = [
-              <ShieldAlert size={14} />,
-              <BookOpen size={14} />,
-              <LayoutDashboard size={14} />,
-              <Star size={14} />,
-            ];
-            return (
-              <motion.div
-                key={phase.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.08 }}
-                className={`rounded-xl border p-2.5 text-center ${phase.bgColor} ${phase.borderColor}`}
-              >
-                <div className={`flex justify-center mb-1 ${phase.color}`}>
-                  {phaseIcons[i]}
-                </div>
-                <p className={`text-sm font-bold ${phase.color}`}>{pct}%</p>
-                <p className="text-[9px] text-muted-foreground leading-tight mt-0.5">
-                  م{i + 1}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
+      {/* ── Phase summary row ── */}
+      <div className="px-4 mt-4 flex gap-2">
+        {PHASES.map((phase, i) => (
+          <PhaseSummaryCard key={phase.id} phase={phase} progress={progress} index={i} />
+        ))}
       </div>
 
-      {/* ── المراحل ── */}
-      <div className="px-4 mt-4 pb-8 flex flex-col gap-4">
-        {/* نبذة توضيحية */}
-        <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
-          <Lightbulb size={14} className="text-secondary shrink-0" />
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            اضغط على المربع بجانب كل خطوة لتعليمها كمكتملة — يُحفظ التقدم تلقائياً.
-          </p>
-        </div>
+      {/* ── Hint ── */}
+      <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2.5">
+        <Lightbulb size={13} className="text-secondary shrink-0 mt-px" />
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          اضغط على الدائرة بجانب أي خطوة لتعليمها كمكتملة — يُحفظ التقدم تلقائياً على الجهاز.
+        </p>
+      </div>
 
-        {PHASES.map((phase) => (
+      {/* ── Phase cards ── */}
+      <div className="px-4 mt-4 pb-10 flex flex-col gap-4">
+        {PHASES.map((phase, i) => (
           <PhaseCard
             key={phase.id}
             phase={phase}
             progress={progress}
-            onToggleStep={handleToggle}
+            onToggle={handleToggle}
+            index={i}
           />
         ))}
 
-        {/* بطاقة الإنجاز */}
+        {/* Completion banner */}
         <AnimatePresence>
-          {totalDone === totalSteps && totalSteps > 0 && (
+          {allComplete && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="rounded-2xl border border-emerald-400/30 bg-gradient-to-bl from-emerald-500/15 to-primary/10 p-6 text-center"
+              className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-6 text-center"
             >
-              <motion.div
-                animate={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ delay: 0.3, duration: 0.7 }}
-                className="text-5xl mb-3"
-              >
-                🌿
-              </motion.div>
-              <h3 className="font-bold text-lg text-emerald-700 dark:text-emerald-400 mb-2">
-                اكتمل تطوير التطبيق!
+              <p className="text-3xl mb-3 font-display">🌿</p>
+              <h3 className="font-bold text-base text-emerald-700 dark:text-emerald-400 mb-1">
+                اكتملت جميع مراحل الخطة!
               </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                تهانينا — جميع مراحل الخطة التطويرية الـ{PHASES.length} قد أُنجزت بالكامل.
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                تهانينا — جميع الـ{totalSteps} خطوة التطويرية قد أُنجزت بالكامل.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* زر الإعادة */}
+        {/* Reset button */}
         {totalDone > 0 && (
-          <button
-            onClick={handleReset}
-            className="mx-auto text-[11px] text-muted-foreground/50 hover:text-destructive transition-colors py-1 px-3"
-          >
-            إعادة ضبط جميع التحديثات
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={handleReset}
+              className="text-[11px] text-muted-foreground/40 hover:text-destructive transition-colors py-1.5 px-4 rounded-full"
+            >
+              إعادة ضبط التقدم
+            </button>
+          </div>
         )}
+
+        {/* Footer note */}
+        <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/40 mt-1">
+          <ArrowRight size={10} />
+          <span>دليل التوبة النصوح — خطة التطوير 2025</span>
+        </div>
       </div>
     </div>
   );
