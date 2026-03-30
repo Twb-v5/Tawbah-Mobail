@@ -63,6 +63,7 @@ import QuranCardsPage from "@/pages/quran/cards";
 import QuranMiraclesPage from "@/pages/quran/miracles";
 import QuranKhatmatPage from "@/pages/quran/khatmat";
 import LoginPage from "@/pages/login";
+import RoadmapPage from "@/pages/roadmap";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -128,6 +129,7 @@ function Router() {
         <Route path="/quran/miracles" component={QuranMiraclesPage} />
         <Route path="/quran/khatmat" component={QuranKhatmatPage} />
         <Route path="/quran" component={QuranPage} />
+        <Route path="/roadmap" component={RoadmapPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
